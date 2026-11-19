@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cellule Jeunesse du 3ème – Guide pratique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Public+Sans:wght@400;500;600;700;800&family=Noto+Kufi+Arabic:wght@700;800;900&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero" id="top">
+  <div class="ring"></div><div class="sun"></div>
+  <div class="wrap">
+    <div class="langs" id="langs" role="group" aria-label="Langue / Language"></div>
+    <span class="kicker">Marseille 3ème · Belle de Mai · St-Mauront</span>
+    <h1>Cellule <em>Jeunesse</em></h1>
+    <p class="tagline" data-t="tagline"></p>
+    <p class="lead" data-t="lead"></p>
+    <form class="search" id="searchBox" role="search">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0b2545" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" autocomplete="off">
+      <button type="submit" id="goQ" data-t="search"></button>
+    </form>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="besoins">
+    <div class="sec-head"><h2 data-t="needsTitle"></h2><p data-t="needsSub"></p></div>
+    <div class="needs" id="needs"></div>
+  </section>
+
+  <section id="adresses">
+    <div class="sec-head"><h2 data-t="addrTitle"></h2><p data-t="addrSub"></p></div>
+    <div class="filters" id="filters">
+      <div class="chips" id="chips" role="toolbar"></div>
+      <div class="subfilters">
+        <label class="toggle"><input type="checkbox" id="favOnly"> <span>★ <span data-t="favs"></span></span></label>
+        <span class="count" id="count"></span>
+      </div>
+    </div>
+    <div class="grid" id="grid" aria-live="polite"></div>
+  </section>
+
+  <section id="agenda">
+    <div class="sec-head"><h2 data-t="evTitle"></h2><p data-t="evSub"></p></div>
+    <div class="seasons" id="seasons"></div>
+  </section>
+
+  <section id="sos">
+    <div class="sos">
+      <div><h2 data-t="sosTitle"></h2><p data-t="sosSub"></p></div>
+      <div class="sos-grid" id="sosGrid"></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="box">
+      <div><b>Cellule Jeunesse du 3ème</b> · <span data-t="footer"></span></div>
+      <button class="btn" id="shareBtn" style="flex:none">🔗 <span data-t="share"></span></button>
+    </div>
+    <a class="signature" href="https://colombo-s.github.io/freelance/index.html" target="_blank" rel="noopener" dir="ltr">
+      <span>Crée et développé par</span>
+      <img src="asset/logo-clb.png" alt="CLB" onerror="this.remove()">
+    </a>
+  </footer>
+</main>
+
+<nav class="bottom" id="nav" aria-label="Navigation"></nav>
+<div class="toast" id="toast" role="status"></div>
+<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+<script>
+/* =========================================================
+   LANGUES
+   fr = source · en, tr, ar = à relire · km (shikomori / shingazidja) = À FAIRE VALIDER PAR UN·E LOCUTEUR·ICE
+   ========================================================= */
+const LANGS = [
+  {code:"fr", label:"Français"},
+  {code:"en", label:"English"},
+  {code:"ar", label:"العربية", rtl:true},
+  {code:"km", label:"Shikomori", html:"zdj"},
+  {code:"tr", label:"Türkçe"}
+];
+
+const T = {
+fr:{
+  tagline:"Les bonnes adresses du 3ème, dans ta poche",
+  lead:"Sport, sorties, job, papiers, santé… Trouve en 2 secondes qui peut t'aider, près de chez toi. C'est gratuit.",
+  ph:"Ex : foot, stage, psy, théâtre, CAF…", search:"Chercher",
+  needsTitle:"J'ai besoin de…", needsSub:"Choisis, on te montre les bonnes adresses.",
+  addrTitle:"Les adresses", addrSub:"Appelle, écris ou lance l'itinéraire directement.",
+  all:"Tout", favs:"Mes favoris", one:"adresse", many:"adresses",
+  call:"Appeler", go:"Y aller", write:"Écrire", from:"Dès {n} ans", favAria:"Ajouter aux favoris",
+  tapCall:"Touche le numéro pour appeler", openRoute:"Ouvre l'itinéraire", copy:"Copier", close:"Fermer",
+  copied:"Copié ✅", copyFail:"Copie impossible, note-le à la main",
+  favAdd:"Ajouté à tes favoris ★", favDel:"Retiré des favoris", linkCopied:"Lien copié, envoie-le à tes potes 🔗",
+  emptyT:"Aucune adresse trouvée", emptyFav:"Tu n'as pas encore de favoris : touche ★ sur une adresse pour la garder ici.", emptyQ:"Essaie un autre mot, ou demande à ton éduc : il ou elle saura t'orienter.",
+  evTitle:"Les events à pas rater", evSub:"Organisés par la Cellule Jeunesse dans le quartier.",
+  spring:"Printemps", autumn:"Automne", soon:"date bientôt annoncée",
+  ev1:"Sport et prévention", ev2:"La fête du quartier", ev3:"Foot + rencontres pro", ev4:"Jobs, stages, formations",
+  sosTitle:"Besoin d'aide tout de suite ?", sosSub:"Numéros gratuits, 24h/24. Pas besoin de crédit pour appeler.",
+  sos119:"Enfance en danger : violences, maltraitance, à la maison ou ailleurs", sos3018:"Harcèlement et cyberharcèlement", sos15:"SAMU : urgence médicale", sos17:"Police : tu es en danger", sos112:"Urgences, depuis n'importe quel portable", sos114:"Urgence par SMS, si tu ne peux pas parler",
+  footer:"un guide porté par les assos du quartier. Une info pas à jour ? Dis-le à ton éduc ou à ton centre social.", share:"Partager le guide",
+  nav:["Besoins","Adresses","Events","Urgence"],
+  cats:{culture:"Culture",sport:"Sport",insertion:"Job et école",droits:"Papiers et droits",sante:"Santé",loisir:"Loisirs"},
+  needs:[["Un job, un stage","CV, stage de 3e, orientation"],["Faire du sport","Foot, judo, danse…"],["Sortir gratos","Ciné, spectacles, concerts"],["Parler à quelqu'un","Stress, galère, embrouille"],["Aide aux devoirs","Soutien scolaire"],["Mes papiers","CAF, démarches, aides"],["Ma santé","Psy, contraception…"],["M'occuper","Activités, vacances"]],
+  d:{
+    friche:"Grand lieu culturel : expos, concerts, ateliers, skatepark et toit-terrasse.",
+    tetes:"Projets artistiques à faire ensemble : vidéo, musique, graff, écriture…",
+    gyptis:"Le cinéma du quartier.",
+    cdc:"Des places gratuites pour aller au spectacle, au concert, au match ou au musée.",
+    chantier:"Café associatif : concerts, soirées, ateliers.",
+    massalia:"Théâtre et marionnettes, à la Friche.",
+    busserade:"Plein de sports différents à essayer.",
+    judo:"Cours de judo.", afro:"Danse afro.", imsat:"Activités sportives.",
+    pps:"Du sport avec les éducs du quartier.",
+    educs:"Les éducs de rue : écoute, conseils, aide pour tes projets, ton école ou un job.",
+    aire:"Accompagnement vers la formation et l'emploi.",
+    transforama:"Accompagnement des jeunes et de leurs projets.",
+    move:"Mobilité et orientation vers l'emploi.",
+    college:"Le collège du quartier.",
+    source:"Soutien scolaire : aide aux devoirs.",
+    ml:"Pour les 16–25 ans : job, formation, logement, santé, aides. Permanences dans le quartier.",
+    ccas:"Aides sociales et accompagnement.",
+    psp:"Aide pour tes démarches : CAF, papiers, comptes en ligne…",
+    ft:"Ex-Pôle Emploi : trouver un emploi, s'inscrire.",
+    imaje:"Écoute et santé pour les jeunes, avec des permanences psy près de chez toi (7 bd Burel).",
+    planning:"Sexualité, contraception, relations amoureuses, violences : on t'écoute sans jugement.",
+    csbdm:"Activités, sorties et accueil jeunes.",
+    frat:"Activités et accueil dans le quartier.",
+    fea:"Activités et sorties pour les jeunes et les familles."
+  },
+  psy:"permanences psychologue"
+},
+en:{
+  tagline:"The best places in the 3rd, in your pocket",
+  lead:"Sport, going out, jobs, paperwork, health… Find who can help you, close to home, in 2 seconds. It's free.",
+  ph:"e.g. football, internship, therapist, CAF…", search:"Search",
+  needsTitle:"I need…", needsSub:"Pick one and we'll show you the right places.",
+  addrTitle:"Places", addrSub:"Call, write or get directions straight away.",
+  all:"All", favs:"My favourites", one:"place", many:"places",
+  call:"Call", go:"Directions", write:"Email", from:"Age {n}+", favAria:"Add to favourites",
+  tapCall:"Tap the number to call", openRoute:"Opens directions", copy:"Copy", close:"Close",
+  copied:"Copied ✅", copyFail:"Can't copy, write it down",
+  favAdd:"Added to your favourites ★", favDel:"Removed from favourites", linkCopied:"Link copied, send it to your friends 🔗",
+  emptyT:"Nothing found", emptyFav:"No favourites yet: tap ★ on a place to keep it here.", emptyQ:"Try another word, or ask your youth worker: they'll point you in the right direction.",
+  evTitle:"Events not to miss", evSub:"Run by the Cellule Jeunesse in the neighbourhood.",
+  spring:"Spring", autumn:"Autumn", soon:"date coming soon",
+  ev1:"Sport and prevention", ev2:"The neighbourhood festival", ev3:"Football + meet employers", ev4:"Jobs, internships, training",
+  sosTitle:"Need help right now?", sosSub:"Free numbers, 24/7. You don't need credit to call.",
+  sos119:"Children in danger: violence or abuse, at home or anywhere", sos3018:"Bullying and cyberbullying", sos15:"SAMU: medical emergency", sos17:"Police: you're in danger", sos112:"Emergency, from any mobile", sos114:"Emergency by text, if you can't speak",
+  footer:"a guide made by local organisations. Something out of date? Tell your youth worker or community centre.", share:"Share the guide",
+  nav:["Needs","Places","Events","Help now"],
+  cats:{culture:"Culture",sport:"Sport",insertion:"Jobs and school",droits:"Paperwork and rights",sante:"Health",loisir:"Free time"},
+  needs:[["A job or internship","CV, school work experience, guidance"],["Do sport","Football, judo, dance…"],["Go out for free","Cinema, shows, concerts"],["Talk to someone","Stress, problems, conflict"],["Homework help","Tutoring"],["My paperwork","CAF, admin, benefits"],["My health","Therapist, contraception…"],["Things to do","Activities, holidays"]],
+  d:{
+    friche:"Big arts venue: exhibitions, concerts, workshops, skatepark and rooftop.",
+    tetes:"Art projects to do together: video, music, graffiti, writing…",
+    gyptis:"The local cinema.",
+    cdc:"Free tickets for shows, concerts, matches or museums.",
+    chantier:"Community café: concerts, evenings, workshops.",
+    massalia:"Theatre and puppets, at the Friche.",
+    busserade:"Lots of different sports to try.",
+    judo:"Judo classes.", afro:"Afro dance.", imsat:"Sports activities.",
+    pps:"Sport with the local youth workers.",
+    educs:"Street youth workers: they listen, give advice and help with your plans, school or a job.",
+    aire:"Support towards training and work.",
+    transforama:"Support for young people and their projects.",
+    move:"Mobility and guidance towards work.",
+    college:"The local secondary school.",
+    source:"Tutoring: homework help.",
+    ml:"For 16–25 year-olds: jobs, training, housing, health, benefits. Drop-in sessions in the neighbourhood.",
+    ccas:"Social support and benefits.",
+    psp:"Help with admin: CAF, ID papers, online accounts…",
+    ft:"Formerly Pôle Emploi: find a job, register.",
+    imaje:"Listening and health for young people, with therapist sessions near you (7 bd Burel).",
+    planning:"Sexuality, contraception, relationships, violence: we listen without judging.",
+    csbdm:"Activities, outings and youth drop-in.",
+    frat:"Activities and drop-in in the neighbourhood.",
+    fea:"Activities and outings for young people and families."
+  },
+  psy:"therapist sessions"
+},
+ar:{
+  tagline:"أفضل العناوين في الدائرة الثالثة، في جيبك",
+  lead:"رياضة، خرجات، عمل، أوراق، صحة… اعرف في ثانيتين من يمكنه مساعدتك قرب بيتك. مجانًا.",
+  ph:"مثال: كرة القدم، تدريب، طبيب نفسي…", search:"ابحث",
+  needsTitle:"أحتاج إلى…", needsSub:"اختر، ونريك العناوين المناسبة.",
+  addrTitle:"العناوين", addrSub:"اتصل أو راسل أو افتح الطريق مباشرة.",
+  all:"الكل", favs:"مفضلتي", one:"عنوان", many:"عناوين",
+  call:"اتصل", go:"الطريق", write:"راسل", from:"من {n} سنة", favAria:"أضف إلى المفضلة",
+  tapCall:"اضغط على الرقم للاتصال", openRoute:"يفتح الطريق", copy:"نسخ", close:"إغلاق",
+  copied:"تم النسخ ✅", copyFail:"لا يمكن النسخ، اكتبه بيدك",
+  favAdd:"أضيف إلى مفضلتك ★", favDel:"حُذف من المفضلة", linkCopied:"تم نسخ الرابط، أرسله لأصحابك 🔗",
+  emptyT:"لا يوجد أي عنوان", emptyFav:"لا توجد مفضلة بعد: اضغط ★ على عنوان لحفظه هنا.", emptyQ:"جرّب كلمة أخرى، أو اسأل المربي: سيوجهك.",
+  evTitle:"فعاليات لا تفوّتها", evSub:"تنظمها Cellule Jeunesse في الحي.",
+  spring:"الربيع", autumn:"الخريف", soon:"سيُعلن التاريخ قريبًا",
+  ev1:"رياضة ووقاية", ev2:"عيد الحي", ev3:"كرة قدم + لقاءات مهنية", ev4:"عمل، تدريب، تكوين",
+  sosTitle:"تحتاج مساعدة الآن؟", sosSub:"أرقام مجانية، 24/24. لا تحتاج رصيدًا للاتصال.",
+  sos119:"طفل في خطر: عنف أو سوء معاملة، في البيت أو غيره", sos3018:"التنمر والتنمر الإلكتروني", sos15:"الإسعاف: حالة طبية طارئة", sos17:"الشرطة: أنت في خطر", sos112:"الطوارئ، من أي هاتف", sos114:"طوارئ عبر رسالة SMS إذا لم تستطع الكلام",
+  footer:"دليل تشرف عليه جمعيات الحي. معلومة غير محدّثة؟ أخبر المربي أو المركز الاجتماعي.", share:"شارك الدليل",
+  nav:["احتياجات","عناوين","فعاليات","طوارئ"],
+  cats:{culture:"ثقافة",sport:"رياضة",insertion:"عمل ودراسة",droits:"أوراق وحقوق",sante:"صحة",loisir:"ترفيه"},
+  needs:[["عمل أو تدريب","سيرة ذاتية، تدريب، توجيه"],["ممارسة الرياضة","كرة القدم، جودو، رقص…"],["خرجات مجانية","سينما، عروض، حفلات"],["التحدث مع أحد","ضغط، مشاكل، خلافات"],["مساعدة في الواجبات","دعم مدرسي"],["أوراقي","CAF، إجراءات، مساعدات"],["صحتي","طبيب نفسي، وسائل منع الحمل…"],["أشغل وقتي","أنشطة، عطل"]],
+  d:{
+    friche:"فضاء ثقافي كبير: معارض، حفلات، ورشات، حلبة تزلج وسطح مفتوح.",
+    tetes:"مشاريع فنية جماعية: فيديو، موسيقى، غرافيتي، كتابة…",
+    gyptis:"سينما الحي.",
+    cdc:"تذاكر مجانية للعروض والحفلات والمباريات والمتاحف.",
+    chantier:"مقهى جمعوي: حفلات، سهرات، ورشات.",
+    massalia:"مسرح ودمى، في La Friche.",
+    busserade:"رياضات كثيرة ومتنوعة للتجربة.",
+    judo:"دروس جودو.", afro:"رقص أفريقي.", imsat:"أنشطة رياضية.",
+    pps:"رياضة مع مربي الحي.",
+    educs:"مربو الشارع: يستمعون إليك وينصحونك ويساعدونك في مشاريعك أو دراستك أو العمل.",
+    aire:"مرافقة نحو التكوين والعمل.",
+    transforama:"مرافقة الشباب ومشاريعهم.",
+    move:"التنقل والتوجيه نحو العمل.",
+    college:"إعدادية الحي.",
+    source:"دعم مدرسي: مساعدة في الواجبات.",
+    ml:"للشباب من 16 إلى 25 سنة: عمل، تكوين، سكن، صحة، مساعدات. مداومات في الحي.",
+    ccas:"مساعدات اجتماعية ومرافقة.",
+    psp:"مساعدة في الإجراءات: CAF، الأوراق، الحسابات على الإنترنت…",
+    ft:"Pôle Emploi سابقًا: البحث عن عمل والتسجيل.",
+    imaje:"استماع وصحة للشباب، مع مداومات أخصائي نفسي قربك (7 bd Burel).",
+    planning:"الجنس، منع الحمل، العلاقات العاطفية، العنف: نستمع إليك دون أحكام.",
+    csbdm:"أنشطة، خرجات واستقبال الشباب.",
+    frat:"أنشطة واستقبال في الحي.",
+    fea:"أنشطة وخرجات للشباب والعائلات."
+  },
+  psy:"مداومات أخصائي نفسي"
+},
+/* Shikomori (Shingazidja) — traduction indicative, à faire relire */
+km:{
+  tagline:"Ze adresi nzidzi za 3ème, mfukoni mwaho",
+  lead:"Sport, ufanya ndzia, hazi, makaratasi, uzima… Pvatsa haraka ye mndru andzo usaidia, pvapvo hari na wa dagoni. Ya bure.",
+  ph:"Mfano: mpira, stage, psy, CAF…", search:"Tsaha",
+  needsTitle:"Ntsaha…", needsSub:"Tsangua, ritsokuonesa ze adresi.",
+  addrTitle:"Ze adresi", addrSub:"Pigiya, andika, au tsaha ndzia.",
+  all:"Piya", favs:"Zangu nzidzi", one:"adresi", many:"adresi",
+  call:"Pigiya", go:"Ndzia", write:"Andika", from:"Mwaha {n} na zaidi", favAria:"Ika ha zangu nzidzi",
+  tapCall:"Gusa i nambari upigiye", openRoute:"Ufungua ndzia", copy:"Kopi", close:"Funga",
+  copied:"Ya kopi ✅", copyFail:"Haidjo kopiya, andika",
+  favAdd:"Ya ikwa ha zaho nzidzi ★", favDel:"Ya landrolwa", linkCopied:"Lien ya kopi, ipvo ha wandzao 🔗",
+  emptyT:"Kawu adresi", emptyFav:"Kawu zaho nzidzi tsena: gusa ★.", emptyQ:"Tsaha neno jingine, au udzisa éduc yaho.",
+  evTitle:"Ze events", evSub:"Zi ndrongozo na Cellule Jeunesse dagoni.",
+  spring:"Printemps", autumn:"Automne", soon:"tarehe itsokwambiwa",
+  ev1:"Sport na usalama", ev2:"Harusi ya dago", ev3:"Mpira + hazi", ev4:"Hazi, stage, masomo",
+  sosTitle:"Usitsaha msada sasa?", sosSub:"Nambari za bure, saa 24/24. Kawu haja ya crédit.",
+  sos119:"Mwana ha hatari: urenga, ha nyumba au mahali jingine", sos3018:"Harcèlement na cyberharcèlement", sos15:"SAMU: uzima ha hatari", sos17:"Polisi: wawe ha hatari", sos112:"Urgence, ha portable piya", sos114:"Urgence ha SMS, ka kutsu djo urongowa",
+  footer:"mwongozo wa ze associations za dago. Habari nde ndzuani? Ambiya éduc yaho.", share:"Ipvo mwongozo",
+  nav:["Ntsaha","Adresi","Events","Msada"],
+  cats:{culture:"Culture",sport:"Sport",insertion:"Hazi na shikoli",droits:"Makaratasi",sante:"Uzima",loisir:"Ufurahi"},
+  needs:[["Hazi, stage","CV, stage, orientation"],["Ufanya sport","Mpira, judo, ngoma…"],["Ulawa bure","Cinéma, spectacles, concerts"],["Urongowa na mndru","Stress, mashaka"],["Msada wa masomo","Soutien scolaire"],["Makaratasi yangu","CAF, démarches"],["Uzima wangu","Psy, contraception…"],["Ufanya shiya","Activités, vacances"]],
+  d:{
+    friche:"Pahali pvanu pva culture: expos, concerts, ateliers, skatepark.",
+    tetes:"Projets d'art hufanya pamwedja: vidéo, musique, graff.",
+    gyptis:"Cinéma ya dago.",
+    cdc:"Places za bure za spectacle, concert, match au musée.",
+    chantier:"Café associatif: concerts, ateliers.",
+    massalia:"Théâtre na marionnettes, ha Friche.",
+    busserade:"Sport nyingi za ujaribu.",
+    judo:"Masomo ya judo.", afro:"Ngoma afro.", imsat:"Sport.",
+    pps:"Sport na ze éducs za dago.",
+    educs:"Ze éducs: wasikiya, wakushauri, wakusaidia ha projets, shikoli au hazi.",
+    aire:"Msada wa masomo na hazi.",
+    transforama:"Msada wa wana na projets zawo.",
+    move:"Mobilité na orientation ya hazi.",
+    college:"Collège ya dago.",
+    source:"Msada wa masomo.",
+    ml:"Mwaha 16–25: hazi, masomo, nyumba, uzima, msada.",
+    ccas:"Msada wa social.",
+    psp:"Msada wa démarches: CAF, makaratasi, internet…",
+    ft:"Pôle Emploi ya kare: tsaha hazi.",
+    imaje:"Usikiya na uzima ha wana, psy pvapvo (7 bd Burel).",
+    planning:"Sexualité, contraception, mahaba, urenga: risikiya.",
+    csbdm:"Activités, ulawa na wana.",
+    frat:"Activités dagoni.",
+    fea:"Activités ha wana na familles."
+  },
+  psy:"permanences psy"
+},
+tr:{
+  tagline:"3. bölgenin en iyi adresleri cebinde",
+  lead:"Spor, etkinlikler, iş, evrak, sağlık… Sana yakın kimin yardım edebileceğini 2 saniyede bul. Ücretsiz.",
+  ph:"Örn: futbol, staj, psikolog, CAF…", search:"Ara",
+  needsTitle:"İhtiyacım var…", needsSub:"Seç, sana doğru adresleri gösterelim.",
+  addrTitle:"Adresler", addrSub:"Hemen ara, yaz ya da yol tarifi al.",
+  all:"Tümü", favs:"Favorilerim", one:"adres", many:"adres",
+  call:"Ara", go:"Yol tarifi", write:"Yaz", from:"{n} yaş ve üzeri", favAria:"Favorilere ekle",
+  tapCall:"Aramak için numaraya dokun", openRoute:"Yol tarifini açar", copy:"Kopyala", close:"Kapat",
+  copied:"Kopyalandı ✅", copyFail:"Kopyalanamadı, not al",
+  favAdd:"Favorilerine eklendi ★", favDel:"Favorilerden çıkarıldı", linkCopied:"Bağlantı kopyalandı, arkadaşlarına gönder 🔗",
+  emptyT:"Adres bulunamadı", emptyFav:"Henüz favorin yok: saklamak için bir adreste ★'a dokun.", emptyQ:"Başka bir kelime dene ya da eğitmenine sor: seni yönlendirir.",
+  evTitle:"Kaçırma!", evSub:"Mahallede Cellule Jeunesse tarafından düzenlenir.",
+  spring:"İlkbahar", autumn:"Sonbahar", soon:"tarih yakında açıklanacak",
+  ev1:"Spor ve önleme", ev2:"Mahalle şenliği", ev3:"Futbol + iş görüşmeleri", ev4:"İş, staj, eğitim",
+  sosTitle:"Hemen yardım mı lazım?", sosSub:"Ücretsiz numaralar, 7/24. Aramak için kontör gerekmez.",
+  sos119:"Tehlikedeki çocuk: şiddet, istismar, evde ya da başka yerde", sos3018:"Zorbalık ve siber zorbalık", sos15:"SAMU: tıbbi acil durum", sos17:"Polis: tehlikedesin", sos112:"Acil durum, her telefondan", sos114:"Konuşamıyorsan SMS ile acil durum",
+  footer:"mahalle derneklerinin rehberi. Güncel olmayan bir bilgi mi var? Eğitmenine ya da sosyal merkeze söyle.", share:"Rehberi paylaş",
+  nav:["İhtiyaçlar","Adresler","Etkinlik","Acil"],
+  cats:{culture:"Kültür",sport:"Spor",insertion:"İş ve okul",droits:"Evrak ve haklar",sante:"Sağlık",loisir:"Boş zaman"},
+  needs:[["İş, staj","CV, okul stajı, yönlendirme"],["Spor yapmak","Futbol, judo, dans…"],["Ücretsiz etkinlik","Sinema, gösteri, konser"],["Biriyle konuşmak","Stres, sorunlar, kavga"],["Ödev yardımı","Okul desteği"],["Evraklarım","CAF, işlemler, yardımlar"],["Sağlığım","Psikolog, doğum kontrolü…"],["Vakit geçirmek","Etkinlikler, tatil"]],
+  d:{
+    friche:"Büyük kültür mekânı: sergiler, konserler, atölyeler, kaykay parkı ve teras.",
+    tetes:"Birlikte yapılan sanat projeleri: video, müzik, grafiti, yazı…",
+    gyptis:"Mahallenin sineması.",
+    cdc:"Gösteri, konser, maç veya müze için ücretsiz biletler.",
+    chantier:"Dernek kafesi: konserler, akşam etkinlikleri, atölyeler.",
+    massalia:"Tiyatro ve kukla, Friche'te.",
+    busserade:"Denemek için birçok farklı spor.",
+    judo:"Judo dersleri.", afro:"Afro dans.", imsat:"Spor etkinlikleri.",
+    pps:"Mahalle eğitmenleriyle spor.",
+    educs:"Sokak eğitmenleri: seni dinler, tavsiye verir, projelerinde, okulda ya da iş bulmada yardım eder.",
+    aire:"Eğitime ve işe yönelik destek.",
+    transforama:"Gençlere ve projelerine destek.",
+    move:"Ulaşım ve işe yönlendirme.",
+    college:"Mahallenin ortaokulu.",
+    source:"Okul desteği: ödev yardımı.",
+    ml:"16–25 yaş için: iş, eğitim, konut, sağlık, yardımlar. Mahallede danışma saatleri.",
+    ccas:"Sosyal yardım ve destek.",
+    psp:"İşlemlerde yardım: CAF, evraklar, internet hesapları…",
+    ft:"Eski adıyla Pôle Emploi: iş bulma, kayıt.",
+    imaje:"Gençler için dinleme ve sağlık, yakınında psikolog görüşmeleri (7 bd Burel).",
+    planning:"Cinsellik, doğum kontrolü, ilişkiler, şiddet: seni yargılamadan dinleriz.",
+    csbdm:"Etkinlikler, geziler ve gençlik merkezi.",
+    frat:"Mahallede etkinlikler ve karşılama.",
+    fea:"Gençler ve aileler için etkinlikler ve geziler."
+  },
+  psy:"psikolog görüşmeleri"
+}
+};
+
+/* ========================================================= DONNÉES */
+const CATS = {
+  culture:{em:"🎭", color:"var(--c-culture)"},
+  sport:{em:"⚽", color:"var(--c-sport)"},
+  insertion:{em:"💼", color:"var(--c-insertion)"},
+  droits:{em:"📄", color:"var(--c-droits)"},
+  sante:{em:"❤️", color:"var(--c-sante)"},
+  loisir:{em:"🎮", color:"var(--c-loisir)"}
+};
+const PLACES = [
+  {id:"friche", name:"La Friche Belle de Mai", cat:"culture", age:12, addr:"41 cours Jobin, 13003 Marseille", tel:["04 95 04 95 95"], mail:["jeunesse@lafriche.org"], kw:"art expo concert skate atelier"},
+  {id:"tetes", name:"Les Têtes de l'Art", cat:"culture", age:12, addr:"29 rue Toussaint (Comptoir de la Victorine), 13003 Marseille", tel:["06 01 77 53 43"], mail:["coline@lestetesdelart.fr"], kw:"art vidéo musique graff projet"},
+  {id:"gyptis", name:"Cinéma le Gyptis", cat:"culture", age:12, addr:"136 rue Loubon, 13003 Marseille", tel:["04 95 04 96 25"], mail:[], kw:"film ciné cinema"},
+  {id:"cdc", name:"Culture du Cœur", cat:"culture", age:12, addr:"32 rue de Crimée, 13003 Marseille", tel:["04 95 04 96 25"], mail:["sveculturesducoeur13@gmail.com"], kw:"gratuit places spectacle sortie musée"},
+  {id:"chantier", name:"En Chantier", cat:"culture", addr:"36 rue Bernard, 13003 Marseille", tel:["04 91 05 97 03"], mail:["contact@enchantier.org"], kw:"café concert soirée"},
+  {id:"massalia", name:"Théâtre Massalia", cat:"culture", addr:"41 cours Jobin, 13003 Marseille", tel:["04 95 04 95 95"], mail:["contact@theatremassalia.com"], kw:"théâtre spectacle marionnette"},
+  {id:"busserade", name:"CAL la Busserade", cat:"sport", addr:"58 rue Cavaignac, 13003 Marseille", tel:["06 41 10 82 20","04 91 50 84 03"], mail:[], kw:"foot basket sport multisport"},
+  {id:"judo", name:"Judo – Centre Social Belle de Mai", cat:"sport", addr:"6 bd Boyer, 13003 Marseille", tel:["04 91 62 55 05"], mail:["belledemai@leolagrange.org"], kw:"judo combat art martial"},
+  {id:"afro", name:"Afrovibes – Centre Social Belle de Mai", cat:"sport", addr:"6 bd Boyer, 13003 Marseille", tel:["04 91 62 55 05"], mail:["belledemai@leolagrange.org"], kw:"danse afro dance"},
+  {id:"imsat", name:"IMSAT", cat:"sport", age:12, addr:"58 rue Cavaignac, 13003 Marseille", tel:["06 95 72 15 59"], mail:["s.said@imsat.co"], kw:"sport capoeira"},
+  {id:"pps", name:"Prévention par le Sport – Addap 13", cat:"sport", age:11, addr:"41 rue Jobin, 13003 Marseille", tel:["06 34 66 46 49"], mail:["ali.chaehoi@addap13.org"], kw:"sport éduc foot"},
+  {id:"educs", name:"Éducateurs spécialisés – Addap 13", cat:"insertion", addr:"352 bd National, 13003 Marseille", tel:["06 09 06 02 69","06 25 05 03 63"], mail:["marine.borrelli@addap13.org","solene.hurtado@addap13.org"], kw:"éduc éducateur écoute aide projet parler"},
+  {id:"aire", name:"Appel d'Aire", cat:"insertion", addr:"29 rue Toussaint (Comptoir de la Victorine), 13003 Marseille", tel:["04 91 21 65 04","09 73 59 87 12","06 46 12 64 47"], mail:["contact@appeldaire.net"], kw:"emploi formation job"},
+  {id:"transforama", name:"Transforama", cat:"insertion", addr:"41 rue Jobin, 13003 Marseille", tel:["06 78 04 30 31"], mail:["contact@transforama.fr"], kw:"projet accompagnement"},
+  {id:"move", name:"MOVE", cat:"insertion", addr:"26 rue Félix Pyat, 13003 Marseille", tel:["06 65 81 86 16"], mail:["move.stmauront@leolagrange.org"], kw:"orientation emploi stage mobilité permis job"},
+  {id:"college", name:"Collège Belle de Mai", cat:"insertion", addr:"4 rue du Dr Léon Perrin, 13003 Marseille", tel:["04 91 64 03 33"], mail:["ce.0131884C@ac-aix-marseille.fr"], kw:"collège école scolarité"},
+  {id:"source", name:"La Source", cat:"insertion", addr:"8 rue du Sud et du Père Louis Thérobe, 13003 Marseille", tel:["04 91 64 03 33"], mail:["lasource@massabielle.org"], kw:"devoirs soutien scolaire école cours"},
+  {id:"ml", name:"Mission Locale", cat:"droits", addr:"8 rue du Sud et du Père Louis Thérobe, 13003 Marseille", extra:["41 cours Jobin, 13003 Marseille","77 rue Félix Pyat, 13003 Marseille"], tel:["04 91 64 03 33"], mail:[], kw:"emploi formation aide 16 25 cv stage job"},
+  {id:"ccas", name:"Permanence CCAS St-Mauront", cat:"droits", addr:"77 rue Félix Pyat, 13003 Marseille", tel:["04 95 04 31 90"], mail:[], kw:"aide sociale argent"},
+  {id:"psp", name:"Permanence Plateforme Service Public", cat:"droits", addr:"77 rue Félix Pyat, 13003 Marseille", tel:["04 95 04 31 90"], mail:[], kw:"papiers caf démarche carte identité administratif"},
+  {id:"ft", name:"Permanence France Travail", cat:"droits", addr:"77 rue Félix Pyat, 13003 Marseille", tel:["04 95 04 31 90"], mail:[], kw:"emploi pole job chômage inscription"},
+  {id:"imaje", name:"Imaje Santé", cat:"sante", addr:"35 rue Estelle, 13001 Marseille", extra:["7 bd Burel, 13003 Marseille (PSY)"], tel:["04 91 13 71 87"], mail:["annalena.ehret@imajesante.fr"], kw:"psy psychologue parler stress écoute santé mentale"},
+  {id:"planning", name:"Planning Familial", cat:"sante", addr:"106 bd National, 13003 Marseille", tel:["04 91 91 09 39"], mail:["info@leplanning13.org"], kw:"contraception sexualité amour ivg test relation"},
+  {id:"csbdm", name:"Centre Social Belle de Mai", cat:"loisir", addr:"6 bd Boyer, 13003 Marseille", tel:["04 91 62 55 05"], mail:["jeunesse.belledemai@leolagrange.org"], kw:"sortie activité accueil jeunes vacances"},
+  {id:"frat", name:"La Fraternité", cat:"loisir", addr:"7 bd Burel, 13003 Marseille", tel:["04 12 04 55 71"], mail:["frat.marseille@gmail.com"], kw:"activité sortie"},
+  {id:"fea", name:"Famille en Action", cat:"loisir", addr:"33 rue de Crimée, 13003 Marseille", tel:["04 88 22 16 19"], mail:["contact@famillesenaction.fr"], kw:"famille sortie activité"}
+];
+const NEEDS = [
+  {em:"💼", ids:["ml","move","aire","ft","educs","transforama"]},
+  {em:"⚽", cat:"sport"},
+  {em:"🎟️", cat:"culture"},
+  {em:"🗣️", ids:["educs","imaje","planning"]},
+  {em:"📚", ids:["source","college","educs"]},
+  {em:"📄", cat:"droits"},
+  {em:"❤️", cat:"sante"},
+  {em:"🎮", cat:"loisir"}
+];
+const EVENTS = [
+  {season:"spring", items:[{em:"⚽", name:"Fin de match pour la violence", k:"ev1"},{em:"🎉", name:"Belle Fête de Mai", k:"ev2"}]},
+  {season:"autumn", items:[{em:"🏆", name:"Tournoi foot « Droit au job »", k:"ev3"},{em:"💼", name:"Forum Emploi", k:"ev4"}]}
+];
+const SOS = [["119","tel:119","sos119"],["3018","tel:3018","sos3018"],["15","tel:15","sos15"],["17","tel:17","sos17"],["112","tel:112","sos112"],["114","sms:114","sos114"]];
+
+/* ========================================================= ÉTAT */
+const store = {
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+let favs = new Set(store.get("cj3-favs",[]));
+function initialLang(){
+  const saved=store.get("cj3-lang",null); if(saved&&T[saved]) return saved;
+  const n=(navigator.language||"fr").slice(0,2);
+  return ({en:"en",ar:"ar",tr:"tr"})[n]||"fr";
+}
+let lang = initialLang();
+let state = {cat:"all", q:"", need:null, favOnly:false};
+
+const $ = s => document.querySelector(s);
+const t = k => (T[lang][k] ?? T.fr[k]);
+const norm = s => (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const telHref = x => "tel:"+x.replace(/\s/g,"");
+const mapHref = a => "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(a);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ltr = s => `<bdi dir="ltr">${esc(s)}</bdi>`;
+const desc = p => (T[lang].d[p.id] ?? T.fr.d[p.id]);
+const catLabel = c => (T[lang].cats[c] ?? T.fr.cats[c]);
+const extraAddr = a => a.replace("(PSY)","("+t("psy")+")");
+
+/* ========================================================= RENDU */
+function renderLangs(){
+  $("#langs").innerHTML = LANGS.map(l=>`<button class="lang" lang="${l.html||l.code}" data-l="${l.code}" aria-pressed="${l.code===lang}">${l.label}</button>`).join("");
+}
+function renderStatic(){
+  const L = LANGS.find(l=>l.code===lang);
+  document.documentElement.lang = lang==="km" ? "zdj" : lang;
+  document.documentElement.dir = L.rtl ? "rtl" : "ltr";
+  if(lang==="ar") document.documentElement.lang="ar";
+  document.querySelectorAll("[data-t]").forEach(el=>el.textContent=t(el.dataset.t));
+  // titres de section avec mot souligné en jaune (dernier mot)
+  ["needsTitle","addrTitle","evTitle"].forEach(k=>{
+    const el=document.querySelector(`[data-t="${k}"]`); const words=t(k).split(" ");
+    const last=words.pop(); el.innerHTML=(words.length?esc(words.join(" "))+" ":"")+`<span class="u">${esc(last)}</span>`;
+  });
+  $("#q").placeholder=t("ph"); $("#q").setAttribute("aria-label",t("search"));
+  $("#needs").innerHTML = NEEDS.map((n,i)=>{const [a,b]=t("needs")[i];return `<button class="need" data-i="${i}"><span class="em">${n.em}</span><b>${esc(a)}</b><small>${esc(b)}</small></button>`}).join("");
+  $("#seasons").innerHTML = EVENTS.map(s=>`<div class="season ${s.season}"><h3>${s.season==="spring"?"🌸":"🍂"} ${esc(t(s.season))}</h3>${s.items.map(e=>`<div class="ev"><div class="ico">${e.em}</div><div><b>${esc(e.name)}</b><small>${esc(t(e.k))} · ${esc(t("soon"))}</small></div></div>`).join("")}</div>`).join("");
+  $("#sosGrid").innerHTML = SOS.map(([n,h,k])=>`<a href="${h}"><strong><bdi>${n}</bdi></strong><span>${esc(t(k))}</span></a>`).join("");
+  const ids=["besoins","adresses","agenda","sos"], ems=["🧭","📍","📅","🆘"];
+  $("#nav").innerHTML = ids.map((id,i)=>`<a href="#${id}" data-s="${id}"><span class="e">${ems[i]}</span>${esc(t("nav")[i])}</a>`).join("");
+  $("#nav").querySelectorAll("a").forEach(a=>a.classList.toggle("on",a.dataset.s===currentSec));
+  $(".langs").setAttribute("aria-label","Langue · Language · اللغة · Lugha · Dil");
+}
+function renderChips(){
+  let html="";
+  if(state.need!==null) html+=`<button class="chip need-chip" aria-pressed="true" data-c="need">${esc(t("needs")[state.need][0])} ✕</button>`;
+  html+=`<button class="chip" data-c="all" aria-pressed="${state.need===null&&state.cat==="all"}">✨ ${esc(t("all"))}</button>`;
+  html+=Object.entries(CATS).map(([k,c])=>`<button class="chip" data-c="${k}" aria-pressed="${state.need===null&&state.cat===k}"><span class="dot" style="background:${c.color}"></span>${esc(catLabel(k))}</button>`).join("");
+  $("#chips").innerHTML=html;
+}
+function filtered(){
+  const q=norm(state.q).trim();
+  const ids = state.need!==null ? NEEDS[state.need].ids : null;
+  return PLACES.filter(p=>{
+    if(ids && !ids.includes(p.id)) return false;
+    if(!ids && state.cat!=="all" && p.cat!==state.cat) return false;
+    if(state.favOnly && !favs.has(p.id)) return false;
+    if(q){
+      const hay=norm([p.name,desc(p),T.fr.d[p.id],p.addr,(p.extra||[]).join(" "),p.kw,catLabel(p.cat),T.fr.cats[p.cat]].join(" "));
+      return q.split(/\s+/).every(w=>hay.includes(w));
+    }
+    return true;
+  }).sort((a,b)=> ids ? ids.indexOf(a.id)-ids.indexOf(b.id) : 0);
+}
+function card(p){
+  const c=CATS[p.cat];
+  const addrs=[p.addr,...(p.extra||[]).map(extraAddr)];
+  return `<article class="card" style="--c:${c.color}">
+    <div class="top">
+      <div>
+        <div class="tags"><span class="tag">${c.em} ${esc(catLabel(p.cat))}</span>${p.age?`<span class="tag age">${esc(t("from").replace("{n}",p.age))}</span>`:""}</div>
+        <h3 dir="ltr" style="text-align:start">${esc(p.name)}</h3>
+      </div>
+      <button class="fav" data-fav="${p.id}" aria-pressed="${favs.has(p.id)}" aria-label="${esc(t("favAria"))}">★</button>
+    </div>
+    <p class="desc">${esc(desc(p))}</p>
+    <div class="info">
+      ${addrs.map(a=>`<div><span class="i">📍</span><span>${ltr(a)}</span></div>`).join("")}
+      ${p.tel.length?`<div><span class="i">📞</span><span>${p.tel.map(ltr).join(" · ")}</span></div>`:""}
+      ${p.mail.map(m=>`<div><span class="i">✉️</span><span style="word-break:break-all">${ltr(m)}</span></div>`).join("")}
+    </div>
+    <div class="actions">
+      ${p.tel.length?`<a class="btn primary" href="${telHref(p.tel[0])}" data-sheet="${p.id}">📞 ${esc(t("call"))}</a>`:""}
+      <a class="btn" href="${mapHref(p.addr)}" target="_blank" rel="noopener">🗺️ ${esc(t("go"))}</a>
+      ${p.mail.length?`<a class="btn" href="mailto:${p.mail[0]}" data-sheet="${p.id}">✉️ ${esc(t("write"))}</a>`:""}
+    </div>
+  </article>`;
+}
+function render(){
+  renderChips();
+  const list=filtered();
+  $("#count").textContent=list.length+" "+(list.length>1?t("many"):t("one"));
+  $("#grid").innerHTML=list.length?list.map(card).join(""):
+    `<div class="empty"><b>${esc(t("emptyT"))}</b>${esc(state.favOnly?t("emptyFav"):t("emptyQ"))}</div>`;
+}
+function setLang(l){
+  lang=l; store.set("cj3-lang",l);
+  renderLangs(); renderStatic(); render();
+}
+
+/* ========================================================= ÉVÉNEMENTS */
+$("#langs").addEventListener("click",e=>{const b=e.target.closest("[data-l]"); if(b) setLang(b.dataset.l)});
+$("#needs").addEventListener("click",e=>{
+  const b=e.target.closest(".need"); if(!b) return;
+  const i=+b.dataset.i, n=NEEDS[i];
+  state.q=""; $("#q").value="";
+  if(n.cat){state.cat=n.cat;state.need=null} else {state.cat="all";state.need=i}
+  render(); document.getElementById("adresses").scrollIntoView({behavior:"smooth"});
+});
+$("#chips").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b) return;
+  const c=b.dataset.c; state.need=null; state.cat = c==="need" ? "all" : c; render();
+});
+$("#q").addEventListener("input",e=>{
+  state.q=e.target.value;
+  if(state.q){state.need=null;state.cat="all"}
+  render();
+});
+$("#searchBox").addEventListener("submit",e=>{e.preventDefault();$("#q").blur();document.getElementById("adresses").scrollIntoView({behavior:"smooth"})});
+$("#favOnly").addEventListener("change",e=>{state.favOnly=e.target.checked;render()});
+$("#grid").addEventListener("click",e=>{
+  const f=e.target.closest("[data-fav]");
+  if(f){const id=f.dataset.fav; favs.has(id)?favs.delete(id):favs.add(id); store.set("cj3-favs",[...favs]); f.setAttribute("aria-pressed",favs.has(id)); toast(favs.has(id)?t("favAdd"):t("favDel")); if(state.favOnly) render(); return;}
+  const s=e.target.closest("[data-sheet]");
+  if(s){e.preventDefault(); openSheet(PLACES.find(p=>p.id===s.dataset.sheet));}
+});
+function openSheet(p){
+  const rows=[
+    ...p.tel.map(x=>`<div class="row"><div><a href="${telHref(x)}" style="font-weight:800;font-size:19px;text-decoration:none">📞 ${ltr(x)}</a><small>${esc(t("tapCall"))}</small></div><button class="copy" data-copy="${x}">${esc(t("copy"))}</button></div>`),
+    ...p.mail.map(m=>`<div class="row"><div><a href="mailto:${m}" style="font-weight:600;text-decoration:none;word-break:break-all">✉️ ${ltr(m)}</a></div><button class="copy" data-copy="${m}">${esc(t("copy"))}</button></div>`),
+    `<div class="row"><div><a href="${mapHref(p.addr)}" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none">📍 ${ltr(p.addr)}</a><small>${esc(t("openRoute"))}</small></div><button class="copy" data-copy="${esc(p.addr)}">${esc(t("copy"))}</button></div>`
+  ];
+  $("#sheet").innerHTML=`<button class="x" aria-label="${esc(t("close"))}">✕</button><h3 dir="ltr" style="text-align:start">${esc(p.name)}</h3><p style="color:var(--ink-2);margin:6px 0 8px">${esc(desc(p))}</p>${rows.join("")}`;
+  $("#sheetBg").classList.add("open");
+}
+$("#sheetBg").addEventListener("click",async e=>{
+  if(e.target.id==="sheetBg"||e.target.closest(".x")){$("#sheetBg").classList.remove("open");return}
+  const c=e.target.closest("[data-copy]");
+  if(c){try{await navigator.clipboard.writeText(c.dataset.copy);toast(t("copied"))}catch(err){toast(t("copyFail"))}}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#sheetBg").classList.remove("open")});
+$("#shareBtn").addEventListener("click",async()=>{
+  try{await navigator.clipboard.writeText(location.href.split("#")[0]);toast(t("linkCopied"))}catch(e){toast(t("copyFail"))}
+});
+let tt; function toast(m){const el=$("#toast");el.textContent=m;el.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>el.classList.remove("show"),1900)}
+
+let currentSec="besoins";
+const io=new IntersectionObserver(es=>{es.forEach(en=>{if(en.isIntersecting){currentSec=en.target.id;document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("on",a.dataset.s===currentSec))}})},{rootMargin:"-45% 0px -50% 0px"});
+["besoins","adresses","agenda","sos"].forEach(id=>io.observe(document.getElementById(id)));
+const fl=$("#filters");
+new IntersectionObserver(([en])=>fl.classList.toggle("stuck",en.intersectionRatio<1),{threshold:[1],rootMargin:"-1px 0px 0px 0px"}).observe(fl);
+
+setLang(lang);
+</script>
+</body>
+</html>
