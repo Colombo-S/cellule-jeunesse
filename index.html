@@ -73,7 +73,15 @@
 <div class="toast" id="toast" role="status"></div>
 <div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* ========================================================= SUPABASE
+   A remplir : Project URL et cle publique (publishable / anon).
+   Ne JAMAIS mettre ici la cle secrete (secret / service_role). */
+const SUPABASE_URL = "https://bbgnppiezqgkpmcigbgd.supabase.co";
+const SUPABASE_KEY = "sb_publishable_VUSJsM1lHLO8nXVGj3XETw_sNR9HoEJ";
+const db = (window.supabase && !SUPABASE_URL.includes("VOTRE")) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
 /* =========================================================
    LANGUES
    fr = source · en, tr, ar = à relire · km (shikomori / shingazidja) = À FAIRE VALIDER PAR UN·E LOCUTEUR·ICE
@@ -344,7 +352,7 @@ const CATS = {
   sante:{em:"❤️", color:"var(--c-sante)"},
   loisir:{em:"🎮", color:"var(--c-loisir)"}
 };
-const PLACES = [
+let PLACES = [
   {id:"friche", name:"La Friche Belle de Mai", cat:"culture", age:12, addr:"41 cours Jobin, 13003 Marseille", tel:["04 95 04 95 95"], mail:["jeunesse@lafriche.org"], kw:"art expo concert skate atelier"},
   {id:"tetes", name:"Les Têtes de l'Art", cat:"culture", age:12, addr:"29 rue Toussaint (Comptoir de la Victorine), 13003 Marseille", tel:["06 01 77 53 43"], mail:["coline@lestetesdelart.fr"], kw:"art vidéo musique graff projet"},
   {id:"gyptis", name:"Cinéma le Gyptis", cat:"culture", age:12, addr:"136 rue Loubon, 13003 Marseille", tel:["04 95 04 96 25"], mail:[], kw:"film ciné cinema"},
@@ -373,15 +381,29 @@ const PLACES = [
   {id:"fea", name:"Famille en Action", cat:"loisir", addr:"33 rue de Crimée, 13003 Marseille", tel:["04 88 22 16 19"], mail:["contact@famillesenaction.fr"], kw:"famille sortie activité"}
 ];
 const NEEDS = [
-  {em:"💼", ids:["ml","move","aire","ft","educs","transforama"]},
-  {em:"⚽", cat:"sport"},
-  {em:"🎟️", cat:"culture"},
-  {em:"🗣️", ids:["educs","imaje","planning"]},
-  {em:"📚", ids:["source","college","educs"]},
-  {em:"📄", cat:"droits"},
-  {em:"❤️", cat:"sante"},
-  {em:"🎮", cat:"loisir"}
+  {em:"💼", code:"job", ids:["ml","move","aire","ft","educs","transforama"]},
+  {em:"⚽", code:"sport", cat:"sport"},
+  {em:"🎟️", code:"sortir", cat:"culture"},
+  {em:"🗣️", code:"parler", ids:["educs","imaje","planning"]},
+  {em:"📚", code:"devoirs", ids:["source","college","educs"]},
+  {em:"📄", code:"papiers", cat:"droits"},
+  {em:"❤️", code:"sante", cat:"sante"},
+  {em:"🎮", code:"occuper", cat:"loisir"}
 ];
+PLACES.forEach(p=>{p.besoins=NEEDS.filter(n=>(n.ids&&n.ids.includes(p.id))||(n.cat&&n.cat===p.cat)).map(n=>n.code)});
+
+/* Transforme une ligne Supabase au format de l'appli */
+const split = (s,sep) => (s||"").split(sep).map(x=>x.trim()).filter(Boolean);
+function fromDb(r){
+  const adr = split(r.adresse," ; ");
+  return {
+    id:"db"+r.id, name:r.nom, cat:CATS[r.theme]?r.theme:"loisir", age:r.age_min||undefined,
+    addr:adr[0]||"", extra:adr.slice(1), tel:split(r.telephone,","), mail:split(r.email,","),
+    kw:(r.mots_cles||"").replace(/,/g," "), besoins:split(r.besoins,","),
+    desc:{fr:r.description_fr, en:r.description_en, ar:r.description_ar, tr:r.description_tr, km:r.description_km}
+  };
+}
+
 const EVENTS = [
   {season:"spring", items:[{em:"⚽", name:"Fin de match pour la violence", k:"ev1"},{em:"🎉", name:"Belle Fête de Mai", k:"ev2"}]},
   {season:"autumn", items:[{em:"🏆", name:"Tournoi foot « Droit au job »", k:"ev3"},{em:"💼", name:"Forum Emploi", k:"ev4"}]}
@@ -409,7 +431,7 @@ const telHref = x => "tel:"+x.replace(/\s/g,"");
 const mapHref = a => "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(a);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ltr = s => `<bdi dir="ltr">${esc(s)}</bdi>`;
-const desc = p => (T[lang].d[p.id] ?? T.fr.d[p.id]);
+const desc = p => (p.desc ? (p.desc[lang] || p.desc.fr || "") : (T[lang].d[p.id] ?? T.fr.d[p.id] ?? ""));
 const catLabel = c => (T[lang].cats[c] ?? T.fr.cats[c]);
 const extraAddr = a => a.replace("(PSY)","("+t("psy")+")");
 
@@ -446,17 +468,17 @@ function renderChips(){
 }
 function filtered(){
   const q=norm(state.q).trim();
-  const ids = state.need!==null ? NEEDS[state.need].ids : null;
+  const needCode = state.need!==null ? NEEDS[state.need].code : null;
   return PLACES.filter(p=>{
-    if(ids && !ids.includes(p.id)) return false;
-    if(!ids && state.cat!=="all" && p.cat!==state.cat) return false;
+    if(needCode && !(p.besoins||[]).includes(needCode)) return false;
+    if(!needCode && state.cat!=="all" && p.cat!==state.cat) return false;
     if(state.favOnly && !favs.has(p.id)) return false;
     if(q){
-      const hay=norm([p.name,desc(p),T.fr.d[p.id],p.addr,(p.extra||[]).join(" "),p.kw,catLabel(p.cat),T.fr.cats[p.cat]].join(" "));
+      const hay=norm([p.name,desc(p),p.desc?p.desc.fr:T.fr.d[p.id],p.addr,(p.extra||[]).join(" "),p.kw,catLabel(p.cat),T.fr.cats[p.cat]].join(" "));
       return q.split(/\s+/).every(w=>hay.includes(w));
     }
     return true;
-  }).sort((a,b)=> ids ? ids.indexOf(a.id)-ids.indexOf(b.id) : 0);
+  });
 }
 function card(p){
   const c=CATS[p.cat];
@@ -547,6 +569,18 @@ const fl=$("#filters");
 new IntersectionObserver(([en])=>fl.classList.toggle("stuck",en.intersectionRatio<1),{threshold:[1],rootMargin:"-1px 0px 0px 0px"}).observe(fl);
 
 setLang(lang);
+
+async function loadPlaces(){
+  const cached = store.get("cj3-places", null);
+  if(cached && cached.length){ PLACES = cached; render(); }
+  if(!db) return;
+  try{
+    const { data, error } = await db.from("structures").select("*").order("id");
+    if(error) throw error;
+    if(data && data.length){ PLACES = data.map(fromDb); store.set("cj3-places", PLACES); render(); }
+  }catch(e){ console.warn("Supabase indisponible, copie locale utilisee", e); }
+}
+loadPlaces();
 </script>
 </body>
 </html>
