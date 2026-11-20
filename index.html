@@ -78,8 +78,8 @@
 /* ========================================================= SUPABASE
    A remplir : Project URL et cle publique (publishable / anon).
    Ne JAMAIS mettre ici la cle secrete (secret / service_role). */
-const SUPABASE_URL = "https://bbgnppiezqgkpmcigbgd.supabase.co";
-const SUPABASE_KEY = "sb_publishable_VUSJsM1lHLO8nXVGj3XETw_sNR9HoEJ";
+const SUPABASE_URL = "https://VOTRE-PROJET.supabase.co";
+const SUPABASE_KEY = "VOTRE_CLE_PUBLIQUE";
 const db = (window.supabase && !SUPABASE_URL.includes("VOTRE")) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 /* =========================================================
@@ -392,14 +392,13 @@ const NEEDS = [
 ];
 PLACES.forEach(p=>{p.besoins=NEEDS.filter(n=>(n.ids&&n.ids.includes(p.id))||(n.cat&&n.cat===p.cat)).map(n=>n.code)});
 
-/* Transforme une ligne Supabase au format de l'appli */
-const split = (s,sep) => (s||"").split(sep).map(x=>x.trim()).filter(Boolean);
+/* Transforme une ligne Supabase (base v2) au format de l'appli */
 function fromDb(r){
-  const adr = split(r.adresse," ; ");
+  const adr = r.adresses || [];
   return {
-    id:"db"+r.id, name:r.nom, cat:CATS[r.theme]?r.theme:"loisir", age:r.age_min||undefined,
-    addr:adr[0]||"", extra:adr.slice(1), tel:split(r.telephone,","), mail:split(r.email,","),
-    kw:(r.mots_cles||"").replace(/,/g," "), besoins:split(r.besoins,","),
+    id:r.slug, name:r.nom, cat:CATS[r.theme]?r.theme:"loisir", age:r.age_min||undefined,
+    addr:adr[0]||"", extra:adr.slice(1), tel:r.telephones||[], mail:r.emails||[],
+    kw:(r.mots_cles||[]).join(" "), besoins:r.besoins||[],
     desc:{fr:r.description_fr, en:r.description_en, ar:r.description_ar, tr:r.description_tr, km:r.description_km}
   };
 }
@@ -571,13 +570,13 @@ new IntersectionObserver(([en])=>fl.classList.toggle("stuck",en.intersectionRati
 setLang(lang);
 
 async function loadPlaces(){
-  const cached = store.get("cj3-places", null);
+  const cached = store.get("cj3-places-v2", null);
   if(cached && cached.length){ PLACES = cached; render(); }
   if(!db) return;
   try{
     const { data, error } = await db.from("structures").select("*").order("id");
     if(error) throw error;
-    if(data && data.length){ PLACES = data.map(fromDb); store.set("cj3-places", PLACES); render(); }
+    if(data && data.length){ PLACES = data.map(fromDb); store.set("cj3-places-v2", PLACES); render(); }
   }catch(e){ console.warn("Supabase indisponible, copie locale utilisee", e); }
 }
 loadPlaces();
